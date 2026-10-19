@@ -65,7 +65,11 @@ textarea{min-height:96px;resize:vertical}
 .light{display:flex;gap:14px;background:var(--housing);border-radius:999px;padding:14px 18px;justify-content:center;width:max-content;margin:0 auto}
 .lamp{width:118px;height:118px;border-radius:50%;border:0;background:var(--lamp-off);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform .15s, box-shadow .2s, background .2s;font-family:Jua,sans-serif;font-size:19px;line-height:1.2;padding:8px}
 .lamp b{font-size:34px;font-weight:400}
-.lamp[data-c=green]{background:#2C5644}.lamp[data-c=yellow]{background:#665623}.lamp[data-c=red]{background:#653538}
+.lamp[data-c=green]{background:var(--green)}.lamp[data-c=yellow]{background:var(--yellow)}.lamp[data-c=red]{background:var(--red)}
+.lamp{opacity:1;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.light:has(.on) .lamp:not(.on){opacity:.7}
+.lamp.on{transform:scale(1.08)}
+.lamp.on::after{content:"✓ 선택";font-size:15px;margin-top:2px}
 .lamp[data-c=green].on{background:var(--green);box-shadow:0 0 0 6px rgba(31,157,85,.25),0 0 34px rgba(31,157,85,.6)}
 .lamp[data-c=yellow].on{background:var(--yellow);box-shadow:0 0 0 6px rgba(232,166,0,.25),0 0 34px rgba(232,166,0,.6)}
 .lamp[data-c=red].on{background:var(--red);box-shadow:0 0 0 6px rgba(214,69,69,.25),0 0 34px rgba(214,69,69,.6)}
@@ -725,7 +729,7 @@ const Board = {
       <div class="dash-code">입장 코드 <b>${s.code}</b></div></div>`;
     let body = "";
     if (s.stage === "waiting"){
-      body = `<div class="big-light">${ORDER.map(c => `<div class="big-lamp" style="background:var(--lamp-off)"><span class="t">${COLORS[c].icon} ${esc(labelOf(s,c))}</span></div>`).join("")}</div>
+      body = `<div class="big-light">${ORDER.map(c => `<div class="big-lamp ${c}"><span class="t" style="font-size:26px;padding:0 18px;text-align:center">${COLORS[c].icon} ${esc(labelOf(s,c))}</span></div>`).join("")}</div>
         <p class="dash-sub">들어온 친구 <b style="color:var(--ink)">${s.joined_count}</b> / ${s.roster_count}명</p>`;
     } else if (s.stage === "first_card" || s.stage === "writing"){
       const picked = this.posts.filter(p => p.first_color).length;
