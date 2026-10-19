@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>신호등 토론</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --sky:#E6F3FB; --sky-deep:#BFE0F3; --paper:#FFFFFF; --ink:#1E3A5F; --ink-soft:#4F6987;
+  --line:#CFE3F0; --housing:#26364A;
+  --green:#1F9D55; --green-soft:#E3F5EA;
+  --red:#D64545; --red-soft:#FBE7E7;
+  --yellow:#E8A600; --yellow-soft:#FFF4D1;
+  --lamp-off:#3A4B60;
+  --radius-lg:22px; --radius-sm:10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --sky:#13202E; --sky-deep:#1D3246; --paper:#1A2A3B; --ink:#E7F1F9; --ink-soft:#A9BED2;
+    --line:#2C4258; --green-soft:#16362A; --red-soft:#3A1E22; --yellow-soft:#3A3115;
+    color-scheme: dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--sky);color:var(--ink);font-family:Pretendard,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:20px;line-height:1.55}
+h1,h2,h3,.display{font-family:Jua,Pretendard,sans-serif;font-weight:400;letter-spacing:-.01em;margin:0}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid #2E86DE;outline-offset:2px}
+.wrap{max-width:880px;margin:0 auto;padding:24px 20px 48px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:10px}
+.mini-light{display:inline-flex;gap:4px;background:var(--housing);padding:6px 8px;border-radius:999px}
+.mini-light i{width:12px;height:12px;border-radius:50%;display:block}
+.topic{background:var(--paper);border-radius:var(--radius-lg);padding:18px 22px;border:2px solid var(--line)}
+.topic small{color:var(--ink-soft);display:block;font-size:15px}
+.topic .display{font-size:30px;line-height:1.3}
+.card{background:var(--paper);border-radius:var(--radius-lg);padding:22px;border:2px solid var(--line);margin-top:16px}
+.muted{color:var(--ink-soft)}
+.btn{border:0;border-radius:14px;padding:14px 22px;min-height:52px;background:var(--ink);color:#fff;font-weight:700}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.btn.small{min-height:40px;padding:8px 14px;font-size:16px;border-radius:10px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+label.field{display:block;margin-top:14px}
+label.field span{display:block;font-weight:700;margin-bottom:6px}
+label.field em{font-style:normal;font-weight:400;color:var(--ink-soft);font-size:15px;margin-left:6px}
+input[type=text],input[type=password],input[type=number],textarea{width:100%;border:2px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--paper)}
+textarea{min-height:96px;resize:vertical}
+.count{text-align:right;font-size:14px;color:var(--ink-soft)}
+.notice{border-radius:12px;padding:12px 16px;margin-top:12px;font-size:17px}
+.notice.warn{background:var(--yellow-soft)}
+.notice.bad{background:var(--red-soft)}
+.notice.ok{background:var(--green-soft)}
+.hidden{display:none!important}
+
+/* 신호등 하우징: 이 앱의 상징 */
+.light{display:flex;gap:14px;background:var(--housing);border-radius:999px;padding:14px 18px;justify-content:center;width:max-content;margin:0 auto}
+.lamp{width:118px;height:118px;border-radius:50%;border:0;background:var(--lamp-off);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform .15s, box-shadow .2s, background .2s;font-family:Jua,sans-serif;font-size:19px;line-height:1.2;padding:8px}
+.lamp b{font-size:34px;font-weight:400}
+.lamp[data-c=green]{background:#2C5644}.lamp[data-c=yellow]{background:#665623}.lamp[data-c=red]{background:#653538}
+.lamp[data-c=green].on{background:var(--green);box-shadow:0 0 0 6px rgba(31,157,85,.25),0 0 34px rgba(31,157,85,.6)}
+.lamp[data-c=yellow].on{background:var(--yellow);box-shadow:0 0 0 6px rgba(232,166,0,.25),0 0 34px rgba(232,166,0,.6)}
+.lamp[data-c=red].on{background:var(--red);box-shadow:0 0 0 6px rgba(214,69,69,.25),0 0 34px rgba(214,69,69,.6)}
+.lamp:active{transform:scale(.96)}
+.lamp-labels{display:grid;grid-template-columns:repeat(3,118px);gap:14px;justify-content:center;margin-top:10px;text-align:center;font-size:16px;color:var(--ink-soft)}
+@media (max-width:520px){.lamp{width:88px;height:88px;font-size:15px}.lamp b{font-size:26px}.lamp-labels{grid-template-columns:repeat(3,88px)}}
+@media (prefers-reduced-motion:reduce){.lamp{transition:none}}
+
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 12px;font-weight:700;font-size:16px}
+.chip.green{background:var(--green-soft);color:var(--green)}
+.chip.red{background:var(--red-soft);color:var(--red)}
+.chip.yellow{background:var(--yellow-soft);color:#9A6E00}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .chip.yellow{color:var(--yellow)}}
+
+.tabs{display:flex;gap:8px;margin-top:18px}
+.tabs button{flex:1;border:2px solid var(--line);background:var(--paper);border-radius:14px;padding:12px;font-weight:700}
+.tabs button[aria-selected=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* 공유 공간 */
+.board-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}
+@media (max-width:760px){.board-cols{grid-template-columns:1fr}}
+.col h3{font-size:22px;display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.col h3 .dot{width:16px;height:16px;border-radius:50%}
+.note{background:var(--paper);border-radius:14px;padding:14px 16px;margin-bottom:10px;border-left:8px solid var(--line);font-size:17px}
+.note.green{border-left-color:var(--green)} .note.red{border-left-color:var(--red)} .note.yellow{border-left-color:var(--yellow)}
+.note .who{font-size:14px;color:var(--ink-soft);display:flex;justify-content:space-between;gap:8px}
+.note dl{margin:6px 0 0}
+.note dt{font-weight:700;font-size:14px;color:var(--ink-soft);margin-top:6px}
+.note dd{margin:0}
+.note .src{font-size:14px;color:var(--ink-soft)}
+.move{font-family:Jua,sans-serif;font-size:18px}
+.filter{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.filter button{border:2px solid var(--line);background:var(--paper);border-radius:999px;padding:6px 14px;font-size:16px}
+.filter button[aria-pressed=true]{border-color:var(--ink);background:var(--ink);color:#fff}
+
+.refs{display:flex;gap:8px;flex-wrap:wrap}
+.refs button{border:2px solid var(--line);background:var(--paper);border-radius:12px;padding:8px 12px;font-size:16px;text-align:left}
+.refs button[aria-pressed=true]{background:var(--sky-deep);border-color:var(--ink)}
+
+/* 교사 */
+table{width:100%;border-collapse:collapse;font-size:16px}
+th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+th{color:var(--ink-soft);font-weight:700}
+.scroll{overflow-x:auto}
+.stepper{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stepper button{border:2px solid var(--line);background:var(--paper);border-radius:14px;padding:12px 8px;font-weight:700;font-size:16px;line-height:1.3}
+.stepper button[aria-current=step]{background:var(--ink);color:#fff;border-color:var(--ink)}
+@media (max-width:640px){.stepper{grid-template-columns:repeat(2,1fr)}}
+.switch{display:inline-flex;align-items:center;gap:10px;font-weight:700}
+.switch input{width:52px;height:30px;accent-color:var(--ink)}
+
+/* 대시보드 */
+body.dash{background:var(--sky)}
+.dash .wrap{max-width:1600px;padding:28px 40px}
+.dash-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
+.dash-head .display{font-size:46px;line-height:1.2}
+.dash-code{font-family:Jua,sans-serif;font-size:28px;color:var(--ink-soft)}
+.dash-code b{font-size:52px;color:var(--ink);font-weight:400;letter-spacing:.06em}
+.big-light{display:flex;gap:36px;background:var(--housing);border-radius:999px;padding:28px 44px;width:max-content;margin:34px auto 0}
+.big-lamp{width:250px;height:250px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:Jua,sans-serif}
+.big-lamp .n{font-size:128px;line-height:1}
+.big-lamp .t{font-size:30px}
+.big-lamp.green{background:var(--green)} .big-lamp.yellow{background:var(--yellow)} .big-lamp.red{background:var(--red)}
+.dash-sub{text-align:center;font-size:32px;margin-top:22px;color:var(--ink-soft)}
+.flow-wrap{display:grid;grid-template-columns:1fr 360px;gap:30px;margin-top:26px;align-items:center}
+.flow-wrap svg{width:100%;height:auto;display:block}
+.stay{font-family:Jua,sans-serif;font-size:36px;text-align:center;background:var(--paper);border-radius:28px;padding:30px;border:3px solid var(--line)}
+.stay b{display:block;font-size:110px;font-weight:400;line-height:1}
+.moves-list{font-family:Jua,sans-serif;font-size:34px;margin-top:18px;line-height:1.6}
+.spot{position:fixed;inset:0;background:rgba(15,28,44,.72);display:flex;align-items:center;justify-content:center;padding:40px}
+.spot .note{max-width:1100px;width:100%;font-size:38px;line-height:1.5;padding:40px 48px;border-left-width:18px}
+.spot .note dt{font-size:26px}
+.spot .note .who{font-size:24px}
+.reconnect{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--housing);color:#fff;padding:10px 18px;border-radius:999px;font-size:16px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="reconnect" class="reconnect hidden" role="status">다시 연결하는 중이에요…</div>
+
+<script>
+/* =========================================================
+   1) 설정: Supabase 프로젝트 주소와 anon 키를 넣으세요.
+   ========================================================= */
+const SUPABASE_URL = "https://jupnsesyznaezizvgldk.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_pLhHl59vhCcy6q6KBm75JQ_ACUllt3_";
+
+const POLL_MS = 2500;
+const BAD_WORDS = ["바보","멍청","닥쳐","꺼져","병신","씨발","시발","개새","미친","존나","좆","새끼"];
+const COLORS = {
+  green:{name:"초록", icon:"○"},
+  yellow:{name:"노랑", icon:"△"},
+  red:{name:"빨강", icon:"✕"}
+};
+const ORDER = ["green","yellow","red"];
+const CHECKLIST = [
+  "① 주장은 가치 있고 실천할 수 있는가?",
+  "② 이유는 주장을 제대로 받쳐 주는가?",
+  "③ 근거는 이유를 제대로 받쳐 주는가?",
+  "④ 근거는 사실인가? (출처가 있는가?)"
+];
+const STAGES = [
+  {key:"waiting", label:"① 대기"},
+  {key:"first_card", label:"② 첫 카드"},
+  {key:"writing", label:"③ 포스트잇 쓰기"},
+  {key:"second_card", label:"④ 두 번째 카드"}
+];
+const ERR = {
+  NO_SESSION:"입장 코드를 다시 확인해 주세요.",
+  NO_STUDENT:"명단에 없는 번호예요. 선생님께 번호를 확인해 주세요.",
+  OTHER_DEVICE:"다른 기기에서 이 번호로 들어왔어요.",
+  STAGE_LOCKED:"선생님이 다음 단계로 넘어갔어요.",
+  NO_EVIDENCE:"근거 칸이 비어 있어요.",
+  NO_REASON:"이유 칸이 비어 있어요.",
+  NO_COLOR:"먼저 신호등 색을 골라 주세요.",
+  BAD_PIN:"비밀번호가 맞지 않아요.",
+  PIN_TOO_SHORT:"비밀번호는 4자리 이상으로 정해 주세요."
+};
+
+const configured = !SUPABASE_URL.includes("YOUR-PROJECT");
+const sb = configured && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const $app = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store = {
+  get(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+function errText(e){
+  const m = (e && (e.message || e.details || "")) + "";
+  for (const k in ERR) if (m.includes(k)) return ERR[k];
+  if (/fetch|network|Failed/i.test(m)) return "인터넷 연결을 확인해 주세요.";
+  return "잠시 후 다시 시도해 주세요.";
+}
+async function rpc(fn, args){
+  const { data, error } = await sb.rpc(fn, args);
+  if (error) throw error;
+  return data;
+}
+let pollTimer = null;
+function startPoll(fn){
+  stopPoll();
+  const tick = async () => {
+    try { await fn(); document.getElementById("reconnect").classList.add("hidden"); }
+    catch(e){ document.getElementById("reconnect").classList.remove("hidden"); }
+  };
+  tick(); pollTimer = setInterval(tick, POLL_MS);
+}
+function stopPoll(){ if (pollTimer) clearInterval(pollTimer); pollTimer = null; }
+function hasBadWord(t){ return BAD_WORDS.some(w => (t||"").includes(w)); }
+function chip(c){ return c ? `<span class="chip ${c}">${COLORS[c].icon} ${COLORS[c].name}</span>` : `<span class="muted">-</span>`; }
+function miniLight(){ return `<span class="mini-light" aria-hidden="true"><i style="background:var(--green)"></i><i style="background:var(--yellow)"></i><i style="background:var(--red)"></i></span>`; }
+function labelOf(sess, c){ return sess ? sess["label_"+c] : ""; }
+
+/* =========================================================
+   라우터
+   ========================================================= */
+function route(){
+  stopPoll();
+  document.body.classList.remove("dash");
+  const h = location.hash.replace(/^#\/?/, "");
+  const [path, qs] = h.split("?");
+  const params = new URLSearchParams(qs || "");
+  if (!configured) return renderSetup();
+  if (path === "teacher") return Teacher.start();
+  if (path === "board") return Board.start(params.get("code"));
+  if (path === "student") return Student.start();
+  return renderHome();
+}
+window.addEventListener("hashchange", route);
+
+function renderSetup(){
+  $app.innerHTML = `<div class="wrap"><div class="card"><h2>설정이 필요해요</h2>
+  <p>index.html 위쪽의 <b>SUPABASE_URL</b>과 <b>SUPABASE_ANON_KEY</b>에 선생님 Supabase 프로젝트 값을 넣어 주세요.
+  자세한 방법은 함께 드린 안내서(README)에 있어요.</p></div></div>`;
+}
+function renderHome(){
+  $app.innerHTML = `<div class="wrap">
+    <div class="topbar"><div class="brand">${miniLight()}<h1 style="font-size:30px">신호등 토론</h1></div></div>
+    <div class="card"><h2 style="font-size:26px">학생이에요</h2>
+      <p class="muted">선생님이 알려 준 입장 코드와 내 번호로 들어가요.</p>
+      <a class="btn" href="#/student" style="display:inline-flex;align-items:center;text-decoration:none">토론에 들어가기</a></div>
+    <div class="card"><h2 style="font-size:26px">선생님이에요</h2>
+      <p class="muted">토론을 만들고 단계를 넘기고, 대시보드를 띄워요.</p>
+      <a class="btn ghost" href="#/teacher" style="display:inline-flex;align-items:center;text-decoration:none">선생님 화면 열기</a></div>
+  </div>`;
+}
+
+/* =========================================================
+   학생 화면
+   ========================================================= */
+const Student = {
+  me:null, sess:null, post:null, posts:[], tab:"mine", filter:"all",
+  pickedFirst:null, second:{color:null, reason:"", refs:[]}, warnedSource:false,
+  lastStage:null, draftTimer:null, attempts:0, lockUntil:0, kicked:false,
+
+  start(){
+    this.me = store.get("tld_student");
+    this.kicked = false;
+    if (this.me) this.enter(); else this.renderJoin();
+  },
+  renderJoin(msg){
+    const locked = Date.now() < this.lockUntil;
+    $app.innerHTML = `<div class="wrap">
+      <div class="topbar"><div class="brand">${miniLight()}<h1 style="font-size:28px">신호등 토론</h1></div></div>
+      <div class="card">
+        <h2 style="font-size:26px">토론에 들어가요</h2>
+        <label class="field"><span>입장 코드 (숫자 4자리)</span>
+          <input id="j-code" type="text" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+        <label class="field"><span>내 번호</span>
+          <input id="j-num" type="number" inputmode="numeric" min="1" max="40"></label>
+        <div class="row" style="margin-top:18px"><button class="btn" id="j-go" ${locked?"disabled":""}>들어가기</button></div>
+        ${msg?`<div class="notice bad" role="alert">${esc(msg)}</div>`:""}
+        ${locked?`<div class="notice warn">코드를 여러 번 틀렸어요. 30초 뒤에 다시 해 주세요.</div>`:""}
+      </div></div>`;
+    document.getElementById("j-go").onclick = () => this.join();
+    if (locked) setTimeout(() => this.renderJoin(), this.lockUntil - Date.now() + 50);
+  },
+  async join(){
+    const code = document.getElementById("j-code").value.trim();
+    const number = parseInt(document.getElementById("j-num").value, 10);
+    if (!/^\d{4}$/.test(code) || !number) return this.renderJoin("입장 코드 4자리와 번호를 모두 넣어 주세요.");
+    try{
+      const r = await rpc("student_join", {p_code:code, p_number:number});
+      this.me = {code, number, token:r.token};
+      store.set("tld_student", this.me);
+      this.attempts = 0;
+      this.enter();
+    }catch(e){
+      this.attempts++;
+      if (this.attempts >= 5){ this.lockUntil = Date.now() + 30000; this.attempts = 0; }
+      this.renderJoin(errText(e));
+    }
+  },
+  rejoin(){
+    const {code, number} = this.me || {};
+    store.del("tld_student"); this.me = null;
+    this.renderJoin();
+    if (code){ document.getElementById("j-code").value = code; document.getElementById("j-num").value = number; }
+  },
+  async refresh(){
+    const {code, number, token} = this.me;
+    const [{data:sessRows, error:e1}, mine] = await Promise.all([
+      sb.from("v_sessions").select("*").eq("code", code).limit(1),
+      rpc("student_me", {p_code:code, p_number:number, p_token:token}).catch(e => { throw e; })
+    ]);
+    if (e1) throw e1;
+    this.sess = sessRows[0];
+    this.post = mine;
+    if (this.sess && (this.sess.stage === "writing" || this.sess.stage === "second_card")){
+      const {data, error} = await sb.from("v_posts").select("*").eq("session_id", this.sess.id).eq("posted", true).eq("hidden", false).order("updated_at",{ascending:false});
+      if (error) throw error;
+      this.posts = data;
+    }
+  },
+  enter(){
+    $app.innerHTML = `<div class="wrap"><p class="muted">불러오는 중…</p></div>`;
+    startPoll(async () => {
+      try { await this.refresh(); }
+      catch(e){
+        if ((e.message||"").includes("OTHER_DEVICE")) { stopPoll(); this.kicked = true; return this.renderKicked(); }
+        if ((e.message||"").includes("NO_STUDENT") || (e.message||"").includes("NO_SESSION")) { stopPoll(); return this.rejoin(); }
+        throw e;
+      }
+      this.render();
+    });
+  },
+  renderKicked(){
+    $app.innerHTML = `<div class="wrap"><div class="card"><h2 style="font-size:26px">다른 기기에서 접속했어요</h2>
+      <p>${this.me.number}번으로 다른 기기에서 들어왔어요. 이 기기에서 계속하려면 다시 들어오세요. 쓴 글은 그대로 남아 있어요.</p>
+      <button class="btn" id="k-re">이 기기에서 다시 들어오기</button></div></div>`;
+    document.getElementById("k-re").onclick = async () => {
+      try{
+        const r = await rpc("student_join", {p_code:this.me.code, p_number:this.me.number});
+        this.me.token = r.token; store.set("tld_student", this.me); this.enter();
+      }catch(e){ alert(errText(e)); }
+    };
+  },
+  /* 입력 중에는 화면을 다시 그리지 않아요 */
+  isTyping(){ const a = document.activeElement; return a && (a.tagName === "TEXTAREA" || a.tagName === "INPUT"); },
+  render(){
+    const s = this.sess;
+    if (!s) return;
+    const stageChanged = this.lastStage !== s.stage;
+    if (!stageChanged && this.isTyping()) return this.updateLive();
+    if (stageChanged && this.lastStage === "writing") this.flushDraft();
+    this.lastStage = s.stage;
+    const head = `<div class="topbar"><div class="brand">${miniLight()}<strong>${this.me.number}번</strong></div>
+      <button class="btn ghost small" id="s-out">나가기</button></div>
+      <div class="topic"><small>오늘의 토론 주제</small><div class="display">${esc(s.topic)}</div></div>`;
+    let body = "";
+    if (s.stage === "waiting") body = `<div class="card"><h2 style="font-size:24px">선생님이 시작할 때까지 기다려요</h2><p class="muted">주제를 읽고 내 생각을 떠올려 보세요.</p></div>`;
+    else if (s.stage === "first_card") body = this.firstCardView();
+    else if (s.stage === "writing") body = this.post.first_color ? this.writingView() : this.firstCardView(true);
+    else if (s.stage === "second_card") body = this.secondView();
+    $app.innerHTML = `<div class="wrap">${head}${body}</div>`;
+    document.getElementById("s-out").onclick = () => { stopPoll(); this.rejoin(); };
+    this.bind();
+  },
+  updateLive(){
+    const box = document.getElementById("shared");
+    if (box && this.tab === "shared") box.innerHTML = this.sharedNotes();
+  },
+  lampSet(selected, name){
+    return `<div class="light" role="radiogroup" aria-label="${name}">
+      ${ORDER.map(c => `<button class="lamp ${selected===c?"on":""}" data-c="${c}" role="radio" aria-checked="${selected===c}"><b>${COLORS[c].icon}</b>${COLORS[c].name}</button>`).join("")}
+    </div><div class="lamp-labels">${ORDER.map(c => `<span>${esc(labelOf(this.sess,c))}</span>`).join("")}</div>`;
+  },
+  firstCardView(fromWriting){
+    const chosen = this.pickedFirst || this.post.first_color;
+    return `<div class="card">
+      <h2 style="font-size:24px">${fromWriting ? "먼저 내 신호등 색을 골라요" : "지금 내 생각은 어느 쪽인가요?"}</h2>
+      <p class="muted">고른 뒤에 '제출하기'를 눌러야 확정돼요.${fromWriting?"":" 이 단계에서는 다시 바꿀 수 있어요."}</p>
+      <div style="margin-top:18px">${this.lampSet(chosen, "첫 번째 카드")}</div>
+      <div class="row" style="margin-top:22px;justify-content:center"><button class="btn" id="f-go" ${chosen?"":"disabled"}>제출하기</button></div>
+      ${this.post.first_color && !this.pickedFirst ? `<div class="notice ok">제출했어요: ${chip(this.post.first_color)}</div>`:""}
+      <div id="f-msg"></div></div>`;
+  },
+  draftKey(){ return `tld_draft_${this.me.code}_${this.me.number}`; },
+  getDraft(){
+    const p = this.post, d = store.get(this.draftKey());
+    return d || {reason:p.reason||"", ev1:p.evidence_1||"", src1:p.source_1||"", ev2:p.evidence_2||"", src2:p.source_2||""};
+  },
+  writingView(){
+    const p = this.post, d = this.getDraft(), yellow = p.first_color === "yellow";
+    const tabs = `<div class="tabs" role="tablist">
+      <button role="tab" aria-selected="${this.tab==="mine"}" data-tab="mine">내 포스트잇</button>
+      <button role="tab" aria-selected="${this.tab==="shared"}" data-tab="shared">친구들 생각</button></div>`;
+    if (this.tab === "shared") return tabs + this.sharedView();
+    const ta = (id, label, hint, val, max, req) => `<label class="field"><span>${label}${req?"":"<em>(선택)</em>"}${hint?`<em>${hint}</em>`:""}</span>
+      <textarea id="${id}" maxlength="${max}">${esc(val)}</textarea><div class="count"><span data-count="${id}">${(val||"").length}</span>/${max}</div></label>`;
+    const inp = (id, label, val) => `<label class="field"><span>${label}<em>(선택) 체크리스트 ④번: 출처가 있나요?</em></span>
+      <input id="${id}" type="text" maxlength="100" value="${esc(val)}" placeholder="예: 신문 기사 이름, 누리집 이름"></label>`;
+    return tabs + `<div class="card">
+      <div class="row" style="justify-content:space-between"><h2 style="font-size:24px">내 포스트잇</h2>${chip(p.first_color)}</div>
+      ${p.hidden?`<div class="notice warn">선생님이 이 글을 잠시 숨겨 두었어요. 내용을 고쳐서 다시 올려 보세요.</div>`:""}
+      ${yellow ? `
+        <p class="muted">노랑은 판정단이에요. 양쪽 근거를 하나씩 찾아 적어요.</p>
+        ${ta("w-ev1", `${esc(labelOf(this.sess,"green"))} 쪽 근거`, "", d.ev1, 200, true)}
+        ${inp("w-src1", "출처", d.src1)}
+        ${ta("w-ev2", `${esc(labelOf(this.sess,"red"))} 쪽 근거`, "", d.ev2, 200, true)}
+        ${inp("w-src2", "출처", d.src2)}`
+      : `
+        ${ta("w-reason", "이유", "왜 그렇게 생각하나요?", d.reason, 100, true)}
+        ${ta("w-ev1", "근거", "이유를 받쳐 주는 사실이나 자료", d.ev1, 200, true)}
+        ${inp("w-src1", "출처", d.src1)}`}
+      <div class="row" style="margin-top:18px"><button class="btn" id="w-go">${p.posted?"고친 내용 올리기":"올리기"}</button>
+        <span class="muted" id="w-saved" style="font-size:15px"></span></div>
+      <div id="w-msg"></div></div>`;
+  },
+  sharedNotes(){
+    const list = this.posts.filter(p => this.filter === "all" || p.first_color === this.filter);
+    if (!list.length) return `<p class="muted">아직 올라온 포스트잇이 없어요.</p>`;
+    const col = c => list.filter(p => p.first_color === c);
+    if (this.filter !== "all") return list.map(p => this.noteHTML(p)).join("");
+    return `<div class="board-cols">${ORDER.map(c => `<div class="col"><h3><span class="dot" style="background:var(--${c})"></span>${COLORS[c].name} ${col(c).length}</h3>${col(c).map(p => this.noteHTML(p)).join("")||'<p class="muted">없어요</p>'}</div>`).join("")}</div>`;
+  },
+  sharedView(){
+    return `<div class="card"><h2 style="font-size:24px">친구들 생각</h2>
+      <div class="filter">${["all",...ORDER].map(f => `<button data-filter="${f}" aria-pressed="${this.filter===f}">${f==="all"?"전체":COLORS[f].icon+" "+COLORS[f].name}</button>`).join("")}</div>
+      <div id="shared">${this.sharedNotes()}</div></div>`;
+  },
+  noteHTML(p, big){
+    const yellow = p.first_color === "yellow";
+    const mv = p.second_color ? `<span class="move">${COLORS[p.first_color].icon}→${COLORS[p.second_color].icon}</span>` : "";
+    return `<article class="note ${p.second_color||p.first_color}">
+      <div class="who"><span>${esc(p.display_name)}</span>${mv}</div>
+      <dl>${yellow ? `
+        <dt>${esc(labelOf(this.sess||Board.sess,"green"))} 쪽 근거</dt><dd>${esc(p.evidence_1)}${p.source_1?`<div class="src">출처: ${esc(p.source_1)}</div>`:""}</dd>
+        <dt>${esc(labelOf(this.sess||Board.sess,"red"))} 쪽 근거</dt><dd>${esc(p.evidence_2)}${p.source_2?`<div class="src">출처: ${esc(p.source_2)}</div>`:""}</dd>`
+      : `<dt>이유</dt><dd>${esc(p.reason)}</dd>
+        <dt>근거</dt><dd>${esc(p.evidence_1)}${p.source_1?`<div class="src">출처: ${esc(p.source_1)}</div>`:""}</dd>`}
+      ${p.change_reason?`<dt>${p.second_color===p.first_color?"생각이 그대로인 까닭":"생각이 바뀐 까닭"}</dt><dd>${esc(p.change_reason)}</dd>`:""}
+      </dl></article>`;
+  },
+  secondView(){
+    const p = this.post;
+    const color = this.second.color || p.second_color;
+    const changed = color && p.first_color && color !== p.first_color;
+    const tpl = !p.first_color ? "왜 이 색을 골랐는지 근거를 들어 써 보세요."
+      : changed ? "근거 (    )가 체크리스트 (  )번을 통과해서 내 생각이 바뀌었어요."
+      : "상대 근거 중 (    )는 타당했지만, (    )는 체크리스트 (  )번에서 걸려서 내 생각은 그대로예요.";
+    const reason = this.second.reason || p.change_reason || "";
+    const refs = this.second.refs.length ? this.second.refs : (p.checklist_refs || []);
+    return `<div class="card">
+      <h2 style="font-size:24px">토론이 끝났어요. 지금 내 생각은?</h2>
+      <p>처음 고른 색: ${chip(p.first_color)}</p>
+      <div style="margin-top:14px">${this.lampSet(color, "두 번째 카드")}</div>
+      ${color && p.first_color ? `<p class="move" style="text-align:center;margin-top:14px">${COLORS[p.first_color].icon} ${COLORS[p.first_color].name} → ${COLORS[color].icon} ${COLORS[color].name}</p>`:""}
+      <label class="field"><span>${changed?"생각이 바뀐 까닭":"까닭"}<em>친구 이름보다 근거 내용을 써요</em></span>
+        <textarea id="s2-reason" maxlength="300" placeholder="${esc(tpl)}">${esc(reason)}</textarea></label>
+      <p style="margin:12px 0 6px;font-weight:700">어떤 체크리스트로 따져 봤나요? <span class="muted" style="font-weight:400;font-size:15px">(여러 개 골라도 돼요)</span></p>
+      <div class="refs">${CHECKLIST.map((t,i) => `<button data-ref="${i+1}" aria-pressed="${refs.includes(i+1)}">${t}</button>`).join("")}</div>
+      <div class="row" style="margin-top:18px"><button class="btn" id="s2-go" ${color?"":"disabled"}>${p.second_color?"고친 내용 제출하기":"제출하기"}</button></div>
+      ${p.second_color && !this.second.color ? `<div class="notice ok">제출했어요. 고치고 싶으면 다시 제출해도 돼요.</div>`:""}
+      <div id="s2-msg"></div></div>`;
+  },
+  readDraft(){
+    const v = id => (document.getElementById(id)||{}).value ?? "";
+    return {reason:v("w-reason"), ev1:v("w-ev1"), src1:v("w-src1"), ev2:v("w-ev2"), src2:v("w-src2")};
+  },
+  async flushDraft(){
+    const d = store.get(this.draftKey());
+    if (!d || !this.post) return;
+    const yellow = this.post.first_color === "yellow";
+    const ok = d.ev1.trim() && (yellow ? d.ev2.trim() : d.reason.trim());
+    if (!ok) return;
+    try{
+      await rpc("save_post", {p_code:this.me.code, p_number:this.me.number, p_token:this.me.token,
+        p_reason:d.reason, p_ev1:d.ev1, p_src1:d.src1, p_ev2:d.ev2, p_src2:d.src2});
+      store.del(this.draftKey());
+    }catch(e){}
+  },
+  bind(){
+    const msg = (id, t, kind="bad") => { const el = document.getElementById(id); if (el) el.innerHTML = `<div class="notice ${kind}" role="alert">${esc(t)}</div>`; };
+    document.querySelectorAll(".tabs [data-tab]").forEach(b => b.onclick = () => { this.tab = b.dataset.tab; this.render(); });
+    document.querySelectorAll(".filter [data-filter]").forEach(b => b.onclick = () => { this.filter = b.dataset.filter; this.render(); });
+
+    const s = this.sess.stage;
+    if (s === "first_card" || (s === "writing" && !this.post.first_color)){
+      document.querySelectorAll(".lamp").forEach(b => b.onclick = () => { this.pickedFirst = b.dataset.c; this.render(); });
+      const go = document.getElementById("f-go");
+      if (go) go.onclick = async () => {
+        go.disabled = true;
+        try{
+          await rpc("save_first_color", {p_code:this.me.code, p_number:this.me.number, p_token:this.me.token, p_color:this.pickedFirst || this.post.first_color});
+          this.post.first_color = this.pickedFirst || this.post.first_color; this.pickedFirst = null; this.render();
+        }catch(e){ msg("f-msg", errText(e)); go.disabled = false; }
+      };
+    }
+    if (s === "writing" && this.post.first_color && this.tab === "mine"){
+      document.querySelectorAll("textarea[id^=w-]").forEach(t => t.addEventListener("input", () => {
+        const c = document.querySelector(`[data-count="${t.id}"]`); if (c) c.textContent = t.value.length;
+      }));
+      clearInterval(this.draftTimer);
+      this.draftTimer = setInterval(() => {
+        if (!document.getElementById("w-go")) return clearInterval(this.draftTimer);
+        store.set(this.draftKey(), this.readDraft());
+        const sv = document.getElementById("w-saved"); if (sv) sv.textContent = "이 기기에 임시 저장됨";
+      }, 5000);
+      document.getElementById("w-go").onclick = async () => {
+        const d = this.readDraft(), yellow = this.post.first_color === "yellow";
+        if (!d.ev1.trim() || (yellow && !d.ev2.trim())) return msg("w-msg", "근거 칸이 비어 있어요.");
+        if (!yellow && !d.reason.trim()) return msg("w-msg", "이유 칸이 비어 있어요.");
+        if (hasBadWord(Object.values(d).join(" "))) return msg("w-msg", "친구가 상처받을 수 있는 말이 있어요. 고운 말로 바꿔 볼까요?", "warn");
+        if (!this.warnedSource && (!d.src1.trim() || (yellow && !d.src2.trim()))){
+          this.warnedSource = true;
+          return msg("w-msg", "체크리스트 ④번: 근거의 출처가 있나요? 출처 없이 올리려면 한 번 더 눌러 주세요.", "warn");
+        }
+        store.set(this.draftKey(), d);
+        try{
+          await rpc("save_post", {p_code:this.me.code, p_number:this.me.number, p_token:this.me.token,
+            p_reason:d.reason, p_ev1:d.ev1, p_src1:d.src1, p_ev2:d.ev2, p_src2:d.src2});
+          store.del(this.draftKey());
+          Object.assign(this.post, {reason:d.reason, evidence_1:d.ev1, source_1:d.src1, evidence_2:d.ev2, source_2:d.src2, posted:true, hidden:false});
+          document.activeElement && document.activeElement.blur();
+          this.render(); msg("w-msg", "올렸어요! '친구들 생각'에서 다른 친구들의 근거도 읽어 보세요.", "ok");
+        }catch(e){ msg("w-msg", errText(e)); }
+      };
+    }
+    if (s === "second_card"){
+      const keep = () => { const t = document.getElementById("s2-reason"); if (t) this.second.reason = t.value; };
+      document.querySelectorAll(".lamp").forEach(b => b.onclick = () => { keep(); this.second.color = b.dataset.c; this.render(); });
+      document.querySelectorAll(".refs [data-ref]").forEach(b => b.onclick = () => {
+        keep();
+        const n = +b.dataset.ref, cur = this.second.refs.length ? this.second.refs : [...(this.post.checklist_refs||[])];
+        this.second.refs = cur.includes(n) ? cur.filter(x => x !== n) : [...cur, n].sort();
+        this.render();
+      });
+      const go = document.getElementById("s2-go");
+      if (go) go.onclick = async () => {
+        keep();
+        const color = this.second.color || this.post.second_color;
+        const reason = (this.second.reason || this.post.change_reason || "").trim();
+        if (!reason) return msg("s2-msg", "까닭 칸이 비어 있어요.");
+        if (hasBadWord(reason)) return msg("s2-msg", "친구가 상처받을 수 있는 말이 있어요. 고운 말로 바꿔 볼까요?", "warn");
+        const refs = this.second.refs.length ? this.second.refs : (this.post.checklist_refs||[]);
+        try{
+          await rpc("save_second", {p_code:this.me.code, p_number:this.me.number, p_token:this.me.token, p_color:color, p_reason:reason, p_refs:refs});
+          Object.assign(this.post, {second_color:color, change_reason:reason, checklist_refs:refs});
+          this.second = {color:null, reason:"", refs:[]};
+          document.activeElement && document.activeElement.blur();
+          this.render();
+        }catch(e){ msg("s2-msg", errText(e)); }
+      };
+    }
+  }
+};
+
+/* =========================================================
+   교사 화면
+   ========================================================= */
+const Teacher = {
+  auth:null, data:null, showRoster:false,
+  start(){
+    let a = null; try{ a = JSON.parse(sessionStorage.getItem("tld_teacher")); }catch(e){}
+    this.auth = a;
+    if (a) this.enter(); else this.renderLogin();
+  },
+  renderLogin(msg){
+    $app.innerHTML = `<div class="wrap">
+      <div class="topbar"><div class="brand">${miniLight()}<h1 style="font-size:28px">선생님 화면</h1></div><a href="#/" class="muted">처음으로</a></div>
+      <div class="card"><h2 style="font-size:24px">새 토론 만들기</h2>
+        <label class="field"><span>토론 주제</span><input id="c-topic" type="text" value="학교에서 핸드폰 사용을 허용해야 한다"></label>
+        <div class="row" style="align-items:stretch">
+          <label class="field" style="flex:1"><span>초록 문구</span><input id="c-g" type="text" value="허용해야 한다"></label>
+          <label class="field" style="flex:1"><span>노랑 문구</span><input id="c-y" type="text" value="아직 못 정했다"></label>
+          <label class="field" style="flex:1"><span>빨강 문구</span><input id="c-r" type="text" value="허용하면 안 된다"></label>
+        </div>
+        <label class="field"><span>선생님 비밀번호<em>4자리 이상, 이 토론을 관리할 때 써요</em></span><input id="c-pin" type="password"></label>
+        <div class="row" style="margin-top:16px"><button class="btn" id="c-go">토론 만들기</button></div></div>
+      <div class="card"><h2 style="font-size:24px">만든 토론 열기</h2>
+        <div class="row" style="align-items:stretch">
+          <label class="field" style="flex:1"><span>입장 코드</span><input id="o-code" type="text" inputmode="numeric" maxlength="4"></label>
+          <label class="field" style="flex:1"><span>비밀번호</span><input id="o-pin" type="password"></label>
+        </div>
+        <div class="row" style="margin-top:16px"><button class="btn ghost" id="o-go">열기</button></div></div>
+      ${msg?`<div class="notice bad" role="alert">${esc(msg)}</div>`:""}
+    </div>`;
+    const v = id => document.getElementById(id).value.trim();
+    document.getElementById("c-go").onclick = async () => {
+      try{
+        const code = await rpc("create_session", {p_topic:v("c-topic"), p_pin:v("c-pin"), p_green:v("c-g"), p_red:v("c-r"), p_yellow:v("c-y")});
+        this.login(code, v("c-pin")); this.showRoster = true;
+      }catch(e){ this.renderLogin(errText(e)); }
+    };
+    document.getElementById("o-go").onclick = async () => {
+      try{ await rpc("teacher_check", {p_code:v("o-code"), p_pin:v("o-pin")}); this.login(v("o-code"), v("o-pin")); }
+      catch(e){ this.renderLogin(errText(e)); }
+    };
+  },
+  login(code, pin){ this.auth = {code, pin}; sessionStorage.setItem("tld_teacher", JSON.stringify(this.auth)); this.enter(); },
+  args(extra){ return Object.assign({p_code:this.auth.code, p_pin:this.auth.pin}, extra||{}); },
+  enter(){
+    $app.innerHTML = `<div class="wrap"><p class="muted">불러오는 중…</p></div>`;
+    startPoll(async () => {
+      try{ this.data = await rpc("teacher_overview", this.args()); }
+      catch(e){ if (/BAD_PIN|NO_SESSION/.test(e.message||"")){ stopPoll(); sessionStorage.removeItem("tld_teacher"); return this.renderLogin(errText(e)); } throw e; }
+      this.render();
+    });
+  },
+  render(){
+    const a = document.activeElement;
+    if (a && (a.id === "r-text")) return;
+    const {session:s, students} = this.data;
+    const posts = students.map(st => Object.assign({}, st.post||{}, {number:st.number, name:st.name, alias:st.alias, joined:st.joined}));
+    const n = k => posts.filter(p => p[k]).length;
+    const boardUrl = `${location.href.split("#")[0]}#/board?code=${s.code}`;
+    $app.innerHTML = `<div class="wrap" style="max-width:1080px">
+      <div class="topbar"><div class="brand">${miniLight()}<h1 style="font-size:26px">선생님 화면</h1></div>
+        <div class="row"><a class="btn ghost small" href="${boardUrl}" target="_blank" rel="noopener">대시보드 열기</a>
+        <button class="btn ghost small" id="t-out">나가기</button></div></div>
+      <div class="topic"><small>입장 코드 <b style="font-size:22px;color:var(--ink)">${s.code}</b></small><div class="display">${esc(s.topic)}</div></div>
+
+      <div class="card"><h2 style="font-size:22px">단계</h2>
+        <div class="stepper" style="margin-top:12px">${STAGES.map(st => `<button data-stage="${st.key}" ${s.stage===st.key?'aria-current="step"':""}>${st.label}</button>`).join("")}</div>
+        <p class="muted" style="font-size:16px;margin:10px 0 0">입장 ${n("joined")}/${students.length}명 · 첫 카드 ${n("first_color")}명 · 포스트잇 ${n("posted")}명 · 두 번째 카드 ${n("second_color")}명</p>
+        <div class="row" style="margin-top:14px;justify-content:space-between">
+          <label class="switch"><input type="checkbox" id="t-names" ${s.names_visible?"checked":""}> 공유 공간에 이름 공개</label>
+          <div class="row"><button class="btn ghost small" id="t-roster">${this.showRoster?"명단 닫기":"학생 명단 등록"}</button>
+          <button class="btn ghost small" id="t-csv">CSV 내려받기</button>
+          <button class="btn ghost small" id="t-reset">처음부터 다시</button></div>
+        </div>
+        ${this.showRoster ? `<label class="field"><span>학생 명단<em>한 줄에 "번호 이름" (엑셀에서 두 칸을 복사해 붙여 넣어도 돼요)</em></span>
+          <textarea id="r-text" style="min-height:180px" placeholder="1 김하늘&#10;2 박바다">${students.map(st => `${st.number} ${st.name}`).join("\n")}</textarea></label>
+          <div class="row" style="margin-top:10px"><button class="btn small" id="r-save">명단 저장</button><span id="r-msg" class="muted"></span></div>`:""}
+      </div>
+
+      <div class="card"><h2 style="font-size:22px">학생별 현황</h2>
+        <div class="scroll"><table><thead><tr><th>번호</th><th>이름</th><th>입장</th><th>첫 카드</th><th>포스트잇</th><th>두 번째</th><th></th></tr></thead><tbody>
+        ${posts.map(p => `<tr>
+          <td>${p.number}</td><td>${esc(p.name)} <span class="muted" style="font-size:13px">${esc(p.alias)}</span></td>
+          <td>${p.joined?"○":"-"}</td><td>${chip(p.first_color)}</td>
+          <td>${p.posted?(p.hidden?'<span class="chip red">숨김</span>':"올림"):"-"}</td>
+          <td>${chip(p.second_color)}</td>
+          <td>${p.id&&p.posted?`<div class="row" style="gap:6px">
+            <button class="btn ghost small" data-hide="${p.id}" data-val="${!p.hidden}">${p.hidden?"다시 보이기":"숨기기"}</button>
+            <button class="btn ghost small" data-spot="${p.id}">${s.spotlight_post_id===p.id?"크게 보기 끄기":"크게 보기"}</button></div>`:""}</td></tr>
+          ${p.posted?`<tr><td></td><td colspan="6" class="muted" style="font-size:15px">${p.first_color==="yellow"
+            ? `${esc(s.label_green)}: ${esc(p.evidence_1)} / ${esc(s.label_red)}: ${esc(p.evidence_2)}`
+            : `이유: ${esc(p.reason)} / 근거: ${esc(p.evidence_1)}${p.source_1?` (출처: ${esc(p.source_1)})`:""}`}
+            ${p.change_reason?`<br>까닭: ${esc(p.change_reason)}${(p.checklist_refs||[]).length?` [체크리스트 ${p.checklist_refs.join(", ")}번]`:""}`:""}</td></tr>`:""}`).join("")}
+        </tbody></table></div>
+        ${students.length?"":`<p class="muted">학생 명단을 먼저 등록해 주세요.</p>`}
+      </div>
+      <div id="t-msg"></div></div>`;
+    this.bind(s, posts);
+  },
+  bind(s, posts){
+    const err = e => { const m = document.getElementById("t-msg"); if (m) m.innerHTML = `<div class="notice bad">${esc(errText(e))}</div>`; };
+    document.getElementById("t-out").onclick = () => { stopPoll(); sessionStorage.removeItem("tld_teacher"); this.auth = null; this.renderLogin(); };
+    document.querySelectorAll("[data-stage]").forEach(b => b.onclick = async () => {
+      try{ await rpc("set_stage", this.args({p_stage:b.dataset.stage})); this.data.session.stage = b.dataset.stage; this.render(); }catch(e){ err(e); }
+    });
+    document.getElementById("t-names").onchange = async ev => {
+      try{ await rpc("set_names_visible", this.args({p_visible:ev.target.checked})); this.data.session.names_visible = ev.target.checked; }catch(e){ err(e); }
+    };
+    document.getElementById("t-roster").onclick = () => { this.showRoster = !this.showRoster; this.render(); };
+    const rs = document.getElementById("r-save");
+    if (rs) rs.onclick = async () => {
+      const rows = document.getElementById("r-text").value.split(/\n/).map(l => l.trim()).filter(Boolean).map(l => {
+        const m = l.match(/^(\d+)[\s,\t]+(.+)$/); return m ? {number:+m[1], name:m[2].trim()} : null;
+      });
+      if (rows.some(r => !r)) { document.getElementById("r-msg").textContent = "한 줄에 '번호 이름' 형식으로 써 주세요."; return; }
+      try{ const c = await rpc("set_roster", this.args({p_roster:rows})); document.activeElement.blur(); this.showRoster = false;
+        this.data = await rpc("teacher_overview", this.args()); this.render();
+        document.getElementById("t-msg").innerHTML = `<div class="notice ok">${c}명을 등록했어요.</div>`; }
+      catch(e){ err(e); }
+    };
+    document.querySelectorAll("[data-hide]").forEach(b => b.onclick = async () => {
+      try{ await rpc("set_hidden", this.args({p_post:b.dataset.hide, p_hidden:b.dataset.val === "true"})); this.data = await rpc("teacher_overview", this.args()); this.render(); }catch(e){ err(e); }
+    });
+    document.querySelectorAll("[data-spot]").forEach(b => b.onclick = async () => {
+      const id = s.spotlight_post_id === b.dataset.spot ? null : b.dataset.spot;
+      try{ await rpc("set_spotlight", this.args({p_post:id})); this.data.session.spotlight_post_id = id; this.render(); }catch(e){ err(e); }
+    });
+    document.getElementById("t-reset").onclick = async () => {
+      if (!confirm("정말 지울까요? 학생들이 쓴 카드와 포스트잇이 모두 지워지고 명단만 남아요.")) return;
+      try{ await rpc("reset_session", this.args()); this.data = await rpc("teacher_overview", this.args()); this.render(); }catch(e){ err(e); }
+    };
+    document.getElementById("t-csv").onclick = () => {
+      const head = ["번호","이름","처음 색","바뀐 색","이유","근거1","출처1","근거2","출처2","까닭","체크리스트","숨김"];
+      const name = c => c ? COLORS[c].name : "";
+      const q = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
+      const lines = [head.map(q).join(",")].concat(posts.map(p => [p.number, p.name, name(p.first_color), name(p.second_color), p.reason, p.evidence_1, p.source_1, p.evidence_2, p.source_2, p.change_reason, (p.checklist_refs||[]).join(" "), p.hidden?"예":""].map(q).join(",")));
+      const blob = new Blob(["\ufeff" + lines.join("\n")], {type:"text/csv;charset=utf-8"});
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `신호등토론_${s.code}.csv`; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    };
+  }
+};
+
+/* =========================================================
+   대시보드 (전자칠판용, 이름 없이 인원수만)
+   ========================================================= */
+const Board = {
+  sess:null, posts:[], code:null,
+  start(code){
+    document.body.classList.add("dash");
+    this.code = code;
+    if (!code){ $app.innerHTML = `<div class="wrap"><div class="card">주소 끝에 ?code=입장코드 가 필요해요. 선생님 화면의 '대시보드 열기'로 들어오세요.</div></div>`; return; }
+    startPoll(async () => {
+      const {data:ss, error} = await sb.from("v_sessions").select("*").eq("code", code).limit(1);
+      if (error) throw error;
+      this.sess = ss[0];
+      if (!this.sess){ $app.innerHTML = `<div class="wrap"><div class="card">입장 코드 ${esc(code)}인 토론을 찾을 수 없어요.</div></div>`; return; }
+      const {data:ps, error:e2} = await sb.from("v_posts").select("*").eq("session_id", this.sess.id);
+      if (e2) throw e2;
+      this.posts = ps;
+      this.render();
+    });
+  },
+  count(key, c){ return this.posts.filter(p => p[key] === c).length; },
+  render(){
+    const s = this.sess;
+    const head = `<div class="dash-head"><div><div class="dash-code">오늘의 토론</div><div class="display">${esc(s.topic)}</div></div>
+      <div class="dash-code">입장 코드 <b>${s.code}</b></div></div>`;
+    let body = "";
+    if (s.stage === "waiting"){
+      body = `<div class="big-light">${ORDER.map(c => `<div class="big-lamp" style="background:var(--lamp-off)"><span class="t">${COLORS[c].icon} ${esc(labelOf(s,c))}</span></div>`).join("")}</div>
+        <p class="dash-sub">들어온 친구 <b style="color:var(--ink)">${s.joined_count}</b> / ${s.roster_count}명</p>`;
+    } else if (s.stage === "first_card" || s.stage === "writing"){
+      const picked = this.posts.filter(p => p.first_color).length;
+      const posted = this.posts.filter(p => p.posted).length;
+      body = `<div class="big-light">${ORDER.map(c => `<div class="big-lamp ${c}"><span class="n">${this.count("first_color",c)}</span><span class="t">${COLORS[c].icon} ${esc(labelOf(s,c))}</span></div>`).join("")}</div>
+        <p class="dash-sub">${s.stage==="writing" ? `포스트잇을 올린 친구 <b style="color:var(--ink)">${posted}</b>명` : `카드를 고른 친구 <b style="color:var(--ink)">${picked}</b> / ${s.joined_count}명`}</p>`;
+    } else {
+      const done = this.posts.filter(p => p.first_color && p.second_color);
+      const stay = done.filter(p => p.first_color === p.second_color).length;
+      const moves = [];
+      ORDER.forEach(a => ORDER.forEach(b => { if (a !== b){ const k = done.filter(p => p.first_color === a && p.second_color === b).length; if (k) moves.push({a,b,k}); } }));
+      body = `<div class="flow-wrap"><div>${this.flowSVG(done)}</div>
+        <div><div class="stay">생각이 그대로<b>${stay}</b>명</div>
+        <div class="moves-list">${moves.length ? moves.map(m => `<div>${COLORS[m.a].icon} ${COLORS[m.a].name} → ${COLORS[m.b].icon} ${COLORS[m.b].name} <b>${m.k}명</b></div>`).join("") : '<div class="muted">아직 바뀐 친구가 없어요</div>'}</div></div></div>
+        <p class="dash-sub">두 번째 카드를 낸 친구 <b style="color:var(--ink)">${done.length}</b>명</p>`;
+    }
+    const spot = s.spotlight_post_id && this.posts.find(p => p.id === s.spotlight_post_id && !p.hidden);
+    $app.innerHTML = `<div class="wrap">${head}${body}</div>${spot ? `<div class="spot">${Student.noteHTML.call({sess:s}, spot)}</div>` : ""}`;
+  },
+  flowSVG(done){
+    const W = 1000, H = 560, top = 50, gap = 26, nodeW = 150;
+    const total = Math.max(done.length, 1), avail = H - top - 20 - gap*2;
+    const col = key => { let y = top; return ORDER.map(c => { const n = done.filter(p => p[key] === c).length; const h = Math.max(avail * n / total, n ? 28 : 6); const r = {c, n, y, h}; y += h + gap; return r; }); };
+    const L = col("first_color"), R = col("second_color");
+    const lo = {}, ro = {}; ORDER.forEach(c => { lo[c] = 0; ro[c] = 0; });
+    let paths = "";
+    ORDER.forEach(a => ORDER.forEach(b => {
+      const k = done.filter(p => p.first_color === a && p.second_color === b).length;
+      if (!k) return;
+      const la = L.find(x => x.c === a), rb = R.find(x => x.c === b);
+      const th = Math.max(la.h * k / Math.max(la.n,1), 4);
+      const y1 = la.y + lo[a] + th/2, y2 = rb.y + ro[b] + th/2; lo[a] += th; ro[b] += th;
+      const x1 = nodeW, x2 = W - nodeW, mx = W/2;
+      paths += `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" stroke="var(--${a})" stroke-opacity="${a===b?0.18:0.55}" stroke-width="${th}" fill="none"/>`;
+    }));
+    const node = (r, x, anchor) => `<rect x="${x}" y="${r.y}" width="${nodeW}" height="${r.h}" rx="12" fill="var(--${r.c})"/>
+      ${r.h > 40 ? `<text x="${x + nodeW/2}" y="${r.y + r.h/2 + 14}" text-anchor="middle" fill="#fff" font-family="Jua, Pretendard, sans-serif" font-size="40">${r.n}</text>` : ""}`;
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="처음 색에서 바뀐 색으로의 이동">
+      <text x="${nodeW/2}" y="32" text-anchor="middle" font-family="Jua, Pretendard, sans-serif" font-size="28" fill="var(--ink-soft)">처음</text>
+      <text x="${W - nodeW/2}" y="32" text-anchor="middle" font-family="Jua, Pretendard, sans-serif" font-size="28" fill="var(--ink-soft)">토론 뒤</text>
+      ${paths}${L.map(r => node(r, 0)).join("")}${R.map(r => node(r, W - nodeW)).join("")}</svg>`;
+  }
+};
+
+route();
+</script>
+</body>
+</html>
